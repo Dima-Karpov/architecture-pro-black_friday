@@ -1,0 +1,32 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Dynamic.puml
+
+title Слияние корзины
+
+LAYOUT_LEFT_RIGHT()
+
+Container(api, "pymongo-api", "FastAPI :8080", "инстанс приложения")
+Container(mongos, "mongos_router", "mongos", "маршрутизатор")
+ContainerDb(config, "configSrv", "MongoDB", "один узел")
+ContainerDb(shard1, "shard1", "MongoDB", "пример: гостевая корзина")
+ContainerDb(shard2, "shard2", "MongoDB", "обход по user_id")
+
+Rel(api, mongos, "прочитать гостевую", "session_id", $index=1)
+Rel(mongos, shard1, "findOne shop.carts", "хэш session_id", $index=2)
+Rel(api, mongos, "дописать items", "только user_id", $index=3)
+Rel(mongos, shard1, "updateOne shop.carts", "нет ключа, оба шарда", $index=4)
+Rel(mongos, shard2, "updateOne shop.carts", "нет ключа, оба шарда", $index=5)
+Rel(api, mongos, "статус abandoned", "session_id", $index=6)
+Rel(mongos, shard1, "updateOne shop.carts", "тот же хэш session_id", $index=7)
+' карта чанков не шаг сценария, поэтому без номера
+$getRel("-->>", mongos, config, "карта чанков", "", "", "", "", "")
+
+note as Caption
+  Чтение гостевой по session_id — один шард.
+  Дописывание по user_id — оба шарда.
+  abandoned снова по session_id.
+  Шард выбирает mongos.
+end note
+
+SHOW_LEGEND()
+@enduml

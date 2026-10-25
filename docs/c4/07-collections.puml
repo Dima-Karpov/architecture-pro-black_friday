@@ -1,0 +1,25 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Коллекции shop
+
+LAYOUT_LEFT_RIGHT()
+
+Container(api, "pymongo-api", "FastAPI :8080", "инстанс приложения")
+Container(mongos, "mongos_router", "mongos", "маршрутизатор")
+ContainerDb(config, "configSrv", "MongoDB", "один узел")
+ContainerDb(shard1, "shard1", "MongoDB", "один узел")
+ContainerDb(shard2, "shard2", "MongoDB", "один узел")
+
+Rel(api, mongos, "читает и пишет")
+Rel(mongos, shard1, "orders, хэш user_id\nproducts, хэш _id\ncarts, хэш session_id")
+Rel(mongos, shard2, "orders, хэш user_id\nproducts, хэш _id\ncarts, хэш session_id")
+Rel(mongos, config, "карта чанков")
+
+note as Caption
+  Хэш. Ключи user_id, _id, session_id.
+  Маршрутизирует mongos.
+end note
+
+SHOW_LEGEND()
+@enduml
