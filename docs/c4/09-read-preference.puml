@@ -1,0 +1,28 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Dynamic.puml
+
+title Чтение с реплик
+
+LAYOUT_LEFT_RIGHT()
+
+Container(api, "pymongo-api", "FastAPI :8080", "инстанс приложения")
+Container(mongos, "mongos_router", "mongos", "маршрутизатор")
+
+Container_Boundary(shard1, "shard1 — пример") {
+  ContainerDb(shard_primary, "primary", "MongoDB", "без допуска на отставание")
+  ContainerDb(shard_secondary, "secondary", "MongoDB", "допуск: секунды")
+}
+
+Rel(api, mongos, "чтение", "шард выбирает mongos", $index=1)
+Rel(mongos, shard_primary, "статус заказа, остаток, текущая корзина, гостевая при слиянии", "primary шарда", $index=2)
+Rel(mongos, shard_secondary, "история заказов, каталог, карточка без решения по остатку", "секунды", $index=3)
+' асинхронная копия не шаг чтения, поэтому без номера
+$getRel("-->", shard_primary, shard_secondary, "асинхронная копия", "", "", "", "", "")
+
+note as Caption
+  Минуты — чтение этой операции на primary.
+  shard2 устроен так же, на схеме один шард как пример.
+end note
+
+SHOW_LEGEND()
+@enduml

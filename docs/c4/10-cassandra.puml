@@ -1,0 +1,39 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Dynamic.puml
+
+title Уровни в датацентре
+
+LAYOUT_TOP_DOWN()
+
+Container(api, "pymongo-api", "FastAPI :8080", "инстанс приложения")
+
+Container_Boundary(dc, "датацентр клиента — N = 3") {
+  ContainerDb(coordinator, "координатор", "Cassandra", "любой узел принял запрос")
+  ContainerDb(replica1, "реплика 1", "Cassandra", "владелец партиции")
+  ContainerDb(replica2, "реплика 2", "Cassandra", "вторая реплика кворума")
+  ContainerDb(replica3, "реплика 3", "Cassandra", "полная копия")
+}
+
+Lay_D(api, coordinator)
+Lay_D(coordinator, replica2)
+Lay_R(replica1, replica2)
+Lay_R(replica2, replica3)
+
+Rel(api, coordinator, "запрос", "LOCAL_*, свой датацентр", $index=1)
+Rel(coordinator, replica1, "LOCAL_QUORUM — статус, корзина и слияние: запись и чтение; остаток: чтение; история, каталог, карточка: запись\nLOCAL_ONE — история, каталог, карточка без решения по остатку\nLOCAL_SERIAL — списание бакета, IF qty = прочитанное", "реплика 1", $index=2)
+Rel(coordinator, replica2, "LOCAL_QUORUM — вторая реплика тех же операций\nLOCAL_SERIAL — вторая реплика списания", "2 из 3", $index=3)
+' хинт не шаг ответа клиенту, поэтому без номера
+$getRel("-->", coordinator, replica3, "Hinted Handoff", "хинт около трёх часов", "", "", "", "")
+
+note as Caption
+  LOCAL_QUORUM и LOCAL_SERIAL ждут реплики 1 и 2.
+  Read Repair на кворуме синхронный: клиент ждёт свежую версию.
+  LOCAL_ONE отвечает с реплики 1. Read Repair асинхронный, допуск — секунды.
+  Реплика 3 хранит ту же строку. Молчит — координатор оставляет хинт
+  на запись заказа, остатка, корзины и карточки.
+  «Регион 2» устроен так же: свой координатор и те же уровни.
+  Anti-Entropy Repair — nodetool вне пика, отдельно от запроса.
+end note
+
+SHOW_LEGEND()
+@enduml

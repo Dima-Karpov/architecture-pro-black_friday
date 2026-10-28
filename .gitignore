@@ -1,1 +1,57 @@
-venv
+# Python
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.python-version
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Obsidian (локальное состояние и черновик)
+.obsidian/
+black-friday/
+
+# Docker
+docker-compose.override.yml
+compose.override.yaml
+
+# Logs and temp
+logs/
+*.log
+tmp/
+temp/
+*.tmp
+*.bak
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

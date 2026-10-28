@@ -1,0 +1,40 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title 3. Redis
+
+LAYOUT_LEFT_RIGHT()
+
+Container(api, "pymongo-api", "FastAPI :8080", "инстанс приложения")
+ContainerDb(redis, "redis", "Redis :6379", "один инстанс")
+Container(mongos, "mongos_router", "mongos", "маршрутизатор")
+ContainerDb(config, "configSrv", "MongoDB", "один узел")
+
+Container_Boundary(shard1, "shard1 — 1 primary + 2 secondary") {
+  ContainerDb(shard1_1, "shard1-1", "MongoDB", "primary")
+  ContainerDb(shard1_2, "shard1-2", "MongoDB", "secondary")
+  ContainerDb(shard1_3, "shard1-3", "MongoDB", "secondary")
+}
+
+Container_Boundary(shard2, "shard2 — 1 primary + 2 secondary") {
+  ContainerDb(shard2_1, "shard2-1", "MongoDB", "primary")
+  ContainerDb(shard2_2, "shard2-2", "MongoDB", "secondary")
+  ContainerDb(shard2_3, "shard2-3", "MongoDB", "secondary")
+}
+
+Rel(api, redis, "попадание / запись ответа")
+Rel(api, mongos, "промах и любая запись")
+Rel(mongos, shard1, "запрос на шард")
+Rel(mongos, shard2, "запрос на шард")
+Rel(mongos, config, "карта чанков")
+Rel(shard1_1, shard1_2, "асинхронная копия")
+Rel(shard1_1, shard1_3, "асинхронная копия")
+Rel(shard2_1, shard2_2, "асинхронная копия")
+Rel(shard2_1, shard2_3, "асинхронная копия")
+
+note as Caption
+  Cache Aside
+end note
+
+SHOW_LEGEND()
+@enduml

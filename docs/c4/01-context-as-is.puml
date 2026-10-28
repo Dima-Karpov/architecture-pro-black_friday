@@ -1,0 +1,41 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Containers — стенд As-Is
+
+System_Boundary(stand, "Docker Compose") {
+  Container(api, "pymongo-api", "Python, FastAPI, uvicorn :8080", "Сервис compose pymongo_api. Читает и пишет документы в MongoDB")
+  ContainerDb(mongo, "mongodb1", "MongoDB :27017", "Один узел. База somedb. Шардов и replica set нет")
+}
+
+Rel(api, mongo, "Читает и пишет", "mongodb://mongodb1")
+
+note right of api
+  **Маршруты app.py**
+  GET /
+  GET /{collection}/count
+  GET /{collection}/users
+  GET /{collection}/users/{name}
+  POST /{collection}/users
+  ----
+  Список users: sleep(1).
+  @cache на 60 с срабатывает
+  только если задан REDIS_URL.
+  В compose REDIS_URL нет.
+  ----
+  Сайт и очереди заказов
+  на схему не входят
+end note
+
+note right of mongo
+  **somedb**
+  Скрипт наполняет helloDoc:
+  { age, name: "ly"+i }, 1000 документов
+  ----
+  Том mongodb1_data_container
+  Реплик нет: replSetGetStatus
+  отвечает «No Replicas»
+end note
+
+SHOW_LEGEND()
+@enduml

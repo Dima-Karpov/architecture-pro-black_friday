@@ -1,0 +1,28 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Dynamic.puml
+
+title Заказ и остаток
+
+LAYOUT_LEFT_RIGHT()
+
+Container(api, "pymongo-api", "FastAPI :8080", "инстанс приложения")
+Container(mongos, "mongos_router", "mongos", "маршрутизатор")
+ContainerDb(config, "configSrv", "MongoDB", "один узел")
+ContainerDb(shard1, "shard1", "MongoDB", "пример: orders")
+ContainerDb(shard2, "shard2", "MongoDB", "пример: products")
+
+Rel(api, mongos, "создать заказ", "user_id", $index=1)
+Rel(mongos, shard1, "insert shop.orders", "хэш user_id", $index=2)
+Rel(api, mongos, "списать остаток", "_id товара", $index=3)
+Rel(mongos, shard2, "update shop.products", "хэш _id", $index=4)
+' карта чанков не шаг сценария, поэтому без номера
+$getRel("-->>", mongos, config, "карта чанков", "", "", "", "", "")
+
+note as Caption
+  Два ключа. Заказ и товар
+  могут лежать на разных шардах.
+  Пример раскладки. Шард выбирает mongos.
+end note
+
+SHOW_LEGEND()
+@enduml
